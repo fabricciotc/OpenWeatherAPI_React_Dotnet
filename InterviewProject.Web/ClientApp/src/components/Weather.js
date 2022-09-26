@@ -1,18 +1,26 @@
 import React, { Component } from 'react';
+import SearchBar from './SearchBar';
 
 export class Weather extends Component {
   static displayName = Weather.name;
 
   constructor(props) {
     super(props);
-    this.state = { forecasts: [], loading: true };
+    this.state = { forecasts: [], loading: true, location:null };
   }
 
+  handleCallback = (childData) =>{
+    this.setState({location: childData})
+    this.populateWeatherData(this.state.location)
+  }
+ 
+ 
   componentDidMount() {
-    this.populateWeatherData();
+      this.populateWeatherData(this.state.location);
   }
-
-  static renderForecastsTable(forecasts) {
+   
+  
+  renderForecastsTable (forecasts) {
     return (
       <table className='table table-striped' aria-labelledby="tabelLabel">
         <thead>
@@ -24,7 +32,7 @@ export class Weather extends Component {
           </tr>
         </thead>
         <tbody>
-          {forecasts.map(forecast =>
+                { forecasts.map(forecast =>
             <tr key={forecast.date}>
               <td>{forecast.date}</td>
               <td>{forecast.temperatureC}</td>
@@ -38,22 +46,49 @@ export class Weather extends Component {
   }
 
   render() {
-    let contents = this.state.loading
-      ? <p><em>Loading...</em></p>
-      : Weather.renderForecastsTable(this.state.forecasts);
-
+      
     return (
       <div>
         <h1 id="tabelLabel" >Weather forecast</h1>
+        <SearchBar parentCallback = {this.handleCallback}></SearchBar>
         <p>This component demonstrates fetching data from the server.</p>
-        {contents}
+        {this.state.loading
+                ? <p><em>Loading...</em></p>
+                : this.renderForecastsTable(this.state.forecasts)}
+        
       </div>
     );
   }
 
-  async populateWeatherData() {
-    const response = await fetch('weatherforecast');
-    const data = await response.json();
-    this.setState({ forecasts: data, loading: false });
+  async populateWeatherData(location) {
+    console.log(location)
+      if (location == null) {
+          var data = "";
+        await fetch("weatherforecast")
+          .then((x) => x.json())
+          .then((x) => {
+            data = x;
+            this.setState({ forecasts: data, loading: false });
+          })
+          .catch((x) => {
+            console.log(x);
+          });
+        console.log(data);
+      
+    }
+    else{ 
+      let request = {                    
+        place: location
+    };
+      const response = await fetch('weatherforecast',{
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(request)
+      });
+      const data = await response.json();
+      this.setState({ forecasts: data, loading: false });
+    }
   }
 }
